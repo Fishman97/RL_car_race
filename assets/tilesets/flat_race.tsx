@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <tileset version="1.10" tiledversion="1.11.2" name="flat_race" tilewidth="32" tileheight="32" tilecount="2106" columns="39">
- <image source="tileset.png" width="1248" height="1728"/>
+ <image source="flat_race.png" width="1248" height="1728"/>
  <tile id="0">
   <properties>
    <property name="solid" type="bool" value="true"/>
@@ -1979,6 +1979,7 @@
  <tile id="395">
   <properties>
    <property name="solid" type="bool" value="false"/>
+   <property name="start" type="bool" value="true"/>
   </properties>
  </tile>
  <tile id="396">
@@ -2163,6 +2164,7 @@
  </tile>
  <tile id="432">
   <properties>
+   <property name="finish" type="bool" value="true"/>
    <property name="solid" type="bool" value="false"/>
   </properties>
  </tile>
