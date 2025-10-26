@@ -125,12 +125,13 @@ class Renderer:
             self._draw_texture_car(car)
         elif self.view_mode == "mask":
             self._draw_mask_view()
-            self._draw_sensors(car)
             self._draw_car(car)
+            self._draw_sensors(car)
         elif self.view_mode == "flood":
             self._draw_flood_view()
-            self._draw_sensors(car)
             self._draw_car(car)
+            self._draw_sensors(car)
+
         
         pygame.display.flip()
         self.clock.tick(60)
@@ -211,8 +212,53 @@ class Renderer:
                 pygame.draw.circle(self.screen, self.GREEN, (x, y), self.tile_size / 3)
 
     def _draw_texture_car(self, car: Car):
-        #TODO: Implement textured car drawing
-        self._draw_car(car)
+        if car.skin is None:
+            self._draw_car(car)
+            return
+
+        surfaces = car.skin.get_surfaces()
+        if not surfaces:
+            self._draw_car(car)
+            return
+
+        base_surface = surfaces.get("Car_Shape", next(iter(surfaces.values())))
+        composite = pygame.Surface(base_surface.get_size(), pygame.SRCALPHA)
+        for surface in surfaces.values():
+            composite.blit(surface, (0, 0))
+
+        angle_degrees = -np.degrees(car.angle)
+        rotated_composite = pygame.transform.rotate(composite, angle_degrees)
+
+        screen_points = [self.world_to_screen(x, y) for x, y in car.get_collision_box()]
+        min_x = min(p[0] for p in screen_points)
+        max_x = max(p[0] for p in screen_points)
+        min_y = min(p[1] for p in screen_points)
+        max_y = max(p[1] for p in screen_points)
+
+        bbox_width = int(max_x - min_x)
+        bbox_height = int(max_y - min_y)
+        if bbox_width <= 0 or bbox_height <= 0:
+            return
+
+        zoom_factor = 1.6
+        scaled_width = max(1, int(bbox_width * zoom_factor))
+        scaled_height = max(1, int(bbox_height * zoom_factor))
+        scaled_composite = pygame.transform.scale(rotated_composite, (scaled_width, scaled_height))
+
+        offset_x = (scaled_width - bbox_width) // 2
+        offset_y = (scaled_height - bbox_height) // 2
+        adjusted_points = [(x - min_x + offset_x, y - min_y + offset_y) for x, y in screen_points]
+
+        mask_surface = pygame.Surface((scaled_width, scaled_height), pygame.SRCALPHA)
+        pygame.draw.polygon(mask_surface, (255, 255, 255, 255), adjusted_points)
+
+        textured_surface = scaled_composite.copy()
+        textured_surface.blit(mask_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+
+        blit_x = min_x - offset_x
+        blit_y = min_y - offset_y
+        self.screen.blit(textured_surface, (blit_x, blit_y))
+    
 
     def _draw_car(self, car: Car):
         collision_box = car.get_collision_box()
@@ -225,7 +271,6 @@ class Renderer:
         front_y = car.y + (car.height / 2) * np.sin(car.angle - np.pi / 2)
         front_screen_x, front_screen_y = self.world_to_screen(front_x, front_y)
         
-        pygame.draw.circle(self.screen, self.BLUE, (front_screen_x, front_screen_y), car.width * self.tile_size/2)
 
     def _draw_sensors(self, car: Car):
         sensors = car.get_sensors_data(self.map)

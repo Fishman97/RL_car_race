@@ -1,5 +1,5 @@
-enviroment/assets/Car/*
-enviroment/assets/tilesets/tileset.png
+assets/Car/*
+assets/tilesets/tileset.png
 .vscode/settings.json
 assets/tilesets/flat_race.png
 src/__pycache__/*

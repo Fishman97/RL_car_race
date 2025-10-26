@@ -64,18 +64,18 @@ class Car_skin:
         surfaces = {}
         
         component_map = {
-            "Anterior_Lights": self.anterior_lights,
-            "Anterior_Wide_Body": self.anterior_wide_body,
-            "Back_Bumper": self.back_bumper,
-            "Car_Cabin": self.car_cabin,
             "Car_Shape": self.car_shape,
-            "Front_Bumper": self.front_bumper,
-            "Hood": self.hood,
-            "Hood_Shape": self.hood_shape,
-            "Posterior_Lights": self.posterior_lights,
+            "Anterior_Wide_Body": self.anterior_wide_body,
             "Posterior_Wide_Body": self.posterior_wide_body,
-            "Roof_Scoops": self.roof_scoops,
+            "Hood_Shape": self.hood_shape,
+            "Hood": self.hood,
+            "Back_Bumper": self.back_bumper,
+            "Front_Bumper": self.front_bumper,
             "Side_Bumper": self.side_bumper,
+            "Posterior_Lights": self.posterior_lights,
+            "Anterior_Lights": self.anterior_lights,
+            "Car_Cabin": self.car_cabin,
+            "Roof_Scoops": self.roof_scoops,
             "Spoiler": self.spoiler
         }
         

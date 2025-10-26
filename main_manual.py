@@ -1,4 +1,3 @@
-import numpy as np
 from src.carRacingEnv import CarRacingEnv
 from src.agents import ManualAgent
 

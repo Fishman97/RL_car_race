@@ -1,9 +1,7 @@
 import numpy as np
-from typing import Tuple, List, Optional, TYPE_CHECKING
+from typing import Tuple, List, Optional
 from src.map import Map
-
-if TYPE_CHECKING:
-    from src.car_skin import Car_skin
+from src.car_skin import Car_skin
 
 
 class Car:
@@ -18,19 +16,22 @@ class Car:
         self.velocity_y = 0.0
         
         self.max_speed = 15.0
-        self.acceleration_force = 5.0
-        self.brake_force = 4.0
+        self.acceleration_force = 6.0
+        self.brake_force = 5.0
         self.steering_sensitivity = 1.6
         self.friction = 0.995
 
-        self.width = 0.4
-        self.height = 0.8
+        self.width = 1.0
+        self.height = 1.5
         
         self.start_x = x
         self.start_y = y
         self.start_angle = angle
         
-        self.skin = skin
+        if skin is None:
+            self.skin = Car_skin.generate_random_skin()
+        else:
+            self.skin = skin
 
     def reset(self, x: float = 0.0, y: float = 0.0, angle: float = 0.0):
         self.x = x if x is not None else self.start_x
@@ -39,6 +40,8 @@ class Car:
         
         self.velocity_x = 0.0
         self.velocity_y = 0.0
+        self.skin = Car_skin.generate_random_skin()
+
     
     def update(self, steering: float, acceleration: float, brake: float, dt: float, map: Map):
         self.angle += steering * self.steering_sensitivity * dt
