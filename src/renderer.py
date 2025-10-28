@@ -32,9 +32,11 @@ class Renderer:
         self.GRAY = (128, 128, 128)
         self.LIGHT_GRAY = (200, 200, 200)
         self.DARK_GRAY = (64, 64, 64)
-        
+        self.YELLOW = (255, 255, 0)
+
         self.font = pygame.font.Font(None, 24)
         self.font_small = pygame.font.Font(None, 20)
+        self._font_cache: Dict[int, pygame.font.Font] = {}
         
         self.clock = pygame.time.Clock()
         
@@ -265,7 +267,7 @@ class Renderer:
         
         screen_points = [self.world_to_screen(x, y) for x, y in collision_box]
         
-        pygame.draw.polygon(self.screen, self.RED, screen_points)
+        pygame.draw.polygon(self.screen, self.YELLOW, screen_points)
         
         front_x = car.x + (car.height / 2) * np.cos(car.angle - np.pi / 2)
         front_y = car.y + (car.height / 2) * np.sin(car.angle - np.pi / 2)
@@ -305,7 +307,7 @@ class Renderer:
         ]
     
         font_size = max(12, int(20 * scale))
-        font = pygame.font.Font(None, font_size)
+        font = self._get_font(font_size)
         
         y_offset = int(10 * scale)
         for text in info_text:
@@ -345,7 +347,9 @@ class Renderer:
     
     def _draw_flood_view(self):
         max_dist = self.map.max_distance
-        
+        show_text = self.tile_size > 10
+        font_dist = self._get_font(int(self.tile_size))
+
         for y in range(self.map.grid_height):
             for x in range(self.map.grid_width):
                 # Calculate pixel-perfect boundaries for each tile
@@ -370,13 +374,19 @@ class Renderer:
                 
                 pygame.draw.rect(self.screen, color, (screen_x, screen_y, tile_width, tile_height))
 
-                if distance != np.inf and self.tile_size > 10:
+                if show_text and distance != np.inf:
                     dist_text = f"{int(distance)}"
-                    font_size = max(1, int( self.tile_size))
-                    font_dist = pygame.font.Font(None, font_size)
                     text_surface = font_dist.render(dist_text, True, self.WHITE)
                     text_rect = text_surface.get_rect(center=(screen_x + tile_width // 2, screen_y + tile_height // 2))
                     self.screen.blit(text_surface, text_rect)
     
+    def _get_font(self, size: int) -> pygame.font.Font:
+        size = max(1, int(size))
+        font = self._font_cache.get(size)
+        if font is None:
+            font = pygame.font.Font(None, size)
+            self._font_cache[size] = font
+        return font
+
     def close(self):
         pygame.quit()

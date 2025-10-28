@@ -22,7 +22,7 @@ class Map:
         
         self.track_mask = self._create_track_mask()
         
-        self.distance_field = self._compute_distance_field()
+        self.distance_field = self._compute_distance_field(self.track_mask)
         self.max_distance = np.max(self.distance_field[self.distance_field != np.inf])
     
     def _create_track_mask(self) -> np.ndarray:
@@ -52,7 +52,7 @@ class Map:
         
         return tile_properties.get("solid", False)
     
-    def _compute_distance_field(self) -> np.ndarray:
+    def _compute_distance_field(self, track_mask: np.ndarray) -> np.ndarray:
         distance_field = np.full((self.grid_height, self.grid_width), np.inf, dtype=float)
         
         queue = deque()
@@ -85,13 +85,8 @@ class Map:
                 if (next_x, next_y) in visited:
                     continue
                 
-                tile_idx = next_y * self.grid_width + next_x
-                if tile_idx < len(self.map_data.get("layers", [{}])[0].get("data", [])):
-                    layer_data = self.map_data.get("layers", [{}])[0].get("data", [])
-                    tile_id = layer_data[tile_idx] - 1
-                    
-                    if self._is_solid_tile(tile_id):
-                        continue
+                if not track_mask[next_y, next_x]:
+                    continue
                 
                 new_dist = curr_dist + 1.0
                 
