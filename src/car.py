@@ -16,8 +16,8 @@ class Car:
         self.velocity_y = 0.0
         
         self.max_speed = 15.0
-        self.acceleration_force = 6.0
-        self.brake_force = 5.0
+        self.acceleration_force = 8.0
+        self.brake_force = 8.0
         self.steering_sensitivity = 1.6
         self.friction = 0.995
 
@@ -92,12 +92,17 @@ class Car:
         
         return rotated_corners
 
-    def get_observation(self, map: Map) -> np.ndarray:
+    def get_normalized_observation(self, map: Map) -> np.ndarray:
         sensors_data = self.get_sensors_data(map)
 
         observation = np.zeros(8)
         for i, (sensor_x, sensor_y, distance, value) in enumerate(sensors_data):
             observation[i] = value
+
+        observation[-1] = self.get_speed() / self.max_speed
+
+        for i in range(len(observation)):
+            observation[i] = np.clip(observation[i], 0.0, 1.0)
 
         return observation
 
@@ -106,7 +111,7 @@ class Car:
         sensor_angles = [-np.pi/4, 0, np.pi/4]
         # subtracting pi/2 to align with car's forward direction
         sensor_angles = [angle - np.pi/2 for angle in sensor_angles]
-        collision_sensor_max_distance = 5.0
+        collision_sensor_max_distance = 6.0
         flood_sensor_distance = 2.0
         sensor_data = [] 
 
@@ -118,7 +123,7 @@ class Car:
             sensor_x = self.x + distance * np.cos(angle)
             sensor_y = self.y + distance * np.sin(angle)
 
-            sensor_data.append((sensor_x, sensor_y, distance, distance))
+            sensor_data.append((sensor_x, sensor_y, distance, distance/collision_sensor_max_distance))
 
         # flood value sensor
         for angle_offset in sensor_angles:

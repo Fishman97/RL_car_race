@@ -61,16 +61,18 @@ class CarRacingEnv(gym.Env):
         self.steps = 0
         self.previous_distance = self.map.get_distance_to_finish(self.car.x, self.car.y)
 
-        observation = self.car.get_observation(self.map)
+        observation = self.car.get_normalized_observation(self.map)
         observation = np.append(observation, self.car.get_speed() / self.car.max_speed)
         info = {}
         
         self.attempts += 1
+        self.last_action = np.array([0.0, 0.0, 0.0])
 
         return observation, info
     
     def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, bool, dict]:
         steering, acceleration, brake = action
+        self.last_action = action
         
         dt = 1.0 / self.metadata["render_fps"]
         self.car.update(steering, acceleration, brake, dt, self.map)
@@ -78,7 +80,7 @@ class CarRacingEnv(gym.Env):
         collision = self.map.check_collision(self.car)
         
         finished = self.map.check_finish_line(self.car)
-        observation = self.car.get_observation(self.map)
+        observation = self.car.get_normalized_observation(self.map)
 
         observation = np.append(observation, self.car.get_speed() / self.car.max_speed)
         
@@ -126,7 +128,7 @@ class CarRacingEnv(gym.Env):
     def render(self) -> bool:
         if self.render_mode == "human":
             if self.renderer is not None:
-                return self.renderer.render(self.car, self.car.get_observation(self.map), self.attempts)
+                return self.renderer.render(self.car, self.car.get_normalized_observation(self.map), self.last_action, self.attempts)
         return True
     
     def close(self):
