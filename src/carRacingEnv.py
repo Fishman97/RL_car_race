@@ -62,7 +62,6 @@ class CarRacingEnv(gym.Env):
         self.previous_distance = self.map.get_distance_to_finish(self.car.x, self.car.y)
 
         observation = self.car.get_normalized_observation(self.map)
-        observation = np.append(observation, self.car.get_speed() / self.car.max_speed)
         info = {}
         
         self.attempts += 1
@@ -81,8 +80,6 @@ class CarRacingEnv(gym.Env):
         
         finished = self.map.check_finish_line(self.car)
         observation = self.car.get_normalized_observation(self.map)
-
-        observation = np.append(observation, self.car.get_speed() / self.car.max_speed)
         
         reward = self._calculate_reward(collision, finished)
         

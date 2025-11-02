@@ -2,22 +2,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Car Racing Env",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/main.py",
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        {
             "name": "Python: Car Racing Env (Manual Control)",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/main_manual.py",
+            "program": "${workspaceFolder}/main.py",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
             "justMyCode": true,
@@ -26,16 +14,37 @@
             }
         },
         {
-            "name": "Python: Car Racing Env (No Render)",
+            "name": "Python: Car Racing Env (Simple Agent)",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
+            "args": [
+                "--agent-type", "simple",
+                "--render-mode", "human",
+                "--print-interval", "1000"
+            ],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
             "justMyCode": true,
             "env": {
-                "PYTHONPATH": "${workspaceFolder}",
-                "RENDER_MODE": "None"
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "Python: Car Racing Env (Simple Agent - No Render)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "args": [
+                "--agent-type", "simple",
+                "--render-mode", "none",
+                "--print-interval", "1000"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
             }
         }
     ]

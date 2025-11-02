@@ -1,69 +1,56 @@
-import numpy as np
-from src.carRacingEnv import CarRacingEnv
-from src.agents import SimpleAgent
+import argparse
+from src.runner import Runner
+
 
 def main():
-    map_path = "assets/maps/track1.tmx"
-    tileset_path = "assets/tilesets/flat_race.tsx"
-
-    env = CarRacingEnv(
-        map_path=map_path,
-        tileset_path=tileset_path,
-        render_mode="human"
+    parser = argparse.ArgumentParser(description="Car Racing Environment Runner")
+    parser.add_argument(
+        "--agent-type",
+        type=str,
+        default="manual",
+        choices=["simple", "manual"],
+        help="Type of agent to use (default: manual)"
+    )
+    parser.add_argument(
+        "--render-mode",
+        type=str,
+        default="human",
+        choices=["human", "none"],
+        help="Render mode: 'human' for visualization, 'none' for no rendering (default: human)"
+    )
+    parser.add_argument(
+        "--print-interval",
+        type=int,
+        default=300,
+        help="Number of steps between status prints (default: 300)"
+    )
+    parser.add_argument(
+        "--map",
+        type=str,
+        default="assets/maps/track1.tmx",
+        help="Path to the map file (default: assets/maps/track1.tmx)"
+    )
+    parser.add_argument(
+        "--tileset",
+        type=str,
+        default="assets/tilesets/flat_race.tsx",
+        help="Path to the tileset file (default: assets/tilesets/flat_race.tsx)"
     )
     
-    # Create the agent
-    agent = SimpleAgent(steering=0.0, acceleration=1.0, brake=0.0)
+    args = parser.parse_args()
     
-    print("Environment created successfully!")
-    print(f"Observation space: {env.observation_space}")
-    print(f"Action space: {env.action_space}")
-    print(f"Agent initialized with fixed action: steering={agent.steering}, acceleration={agent.acceleration}, brake={agent.brake}")
+    # Convert 'none' string to None for render_mode
+    render_mode = None if args.render_mode == "none" else args.render_mode
     
-    # Reset environment
-    observation, info = env.reset()
-    print(f"\nInitial observation: {observation}")
-    print(f"Initial info: {info}")
+    runner = Runner(
+        map_path=args.map,
+        tileset_path=args.tileset,
+        agent_type=args.agent_type,
+        render_mode=render_mode
+    )
     
-    running = True
-    step = 0
-    
-    while running:
-        # Agent decides action (ignores observation and returns same action)
-        action = agent.act(observation)
-        
-        observation, reward, terminated, truncated, info = env.step(action)
-        
-        # Render and check if window should close
-        running = env.render()
-        
-        if step % 10 == 0:
-            print(f"\nStep {step}:")
-            print(f"  Position: {info['position']}")
-            print(f"  Velocity: {info['velocity']:.2f}")
-            print(f"  Reward: {reward:.2f}")
-            print(f"  Observation: {observation}")
-        
-        # Auto-restart when episode ends
-        if terminated or truncated:
-            print(f"\nEpisode ended at step {step}")
-            print(f"  Collision: {info['collision']}")
-            print(f"  Finished: {info['finished']}")
-            print(f"  Terminated: {terminated}, Truncated: {truncated}")
-            print(f"  Restarting...")
-            observation, info = env.reset()
-            agent.reset()
-            step = 0
-        else:
-            step += 1
-    
-    env.close()
-    print("\nEnvironment closed.")
+    runner.run(print_interval=args.print_interval)
+
 
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        print(f"Error: {e}")
-        import traceback
-        traceback.print_exc()
+    main()

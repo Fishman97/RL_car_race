@@ -1,3 +1,4 @@
+import math
 import numpy as np
 from typing import Tuple, List, Optional
 from src.map import Map
@@ -18,7 +19,7 @@ class Car:
         self.max_speed = 15.0
         self.acceleration_force = 8.0
         self.brake_force = 8.0
-        self.steering_sensitivity = 1.6
+        self.steering_sensitivity = 2.6
         self.friction = 0.995
 
         self.width = 1.0
@@ -108,57 +109,65 @@ class Car:
 
     # first 3 for collision sensors, the 4 for flood value detection [x, y, distance, value]
     def get_sensors_data(self, map: Map) -> List[Tuple[float, float, float, float]]:
-        sensor_angles = [-np.pi/4, 0, np.pi/4]
-        # subtracting pi/2 to align with car's forward direction
-        sensor_angles = [angle - np.pi/2 for angle in sensor_angles]
+        sensor_offsets = (-math.pi / 4, 0.0, math.pi / 4)
+        heading = self.angle - math.pi / 2
         collision_sensor_max_distance = 6.0
         flood_sensor_distance = 2.0
-        sensor_data = [] 
+        step_results: List[Tuple[float, float, float, float]] = []
 
-        # first 3 sensors for collision detection
-        for angle_offset in sensor_angles:
-            angle = self.angle + angle_offset
+        # cache current flood value once per step
+        current_flood = map.get_normalized_distance_to_finish(self.x, self.y)
 
-            distance, flood_value = self._cast_ray_for_collision(map, angle, collision_sensor_max_distance)
-            sensor_x = self.x + distance * np.cos(angle)
-            sensor_y = self.y + distance * np.sin(angle)
+        # cache unit vectors for reuse between collision and flood sensors
+        sensor_vectors: List[Tuple[float, float]] = []
 
-            sensor_data.append((sensor_x, sensor_y, distance, distance/collision_sensor_max_distance))
+        for offset in sensor_offsets:
+            angle = heading + offset
+            cos_angle = math.cos(angle)
+            sin_angle = math.sin(angle)
+            sensor_vectors.append((cos_angle, sin_angle))
 
-        # flood value sensor
-        for angle_offset in sensor_angles:
-            angle = self.angle + angle_offset
+            distance, _ = self._cast_ray_for_collision(map, cos_angle, sin_angle, collision_sensor_max_distance)
+            clamped_distance = max(0.0, min(distance, collision_sensor_max_distance))
+            sensor_x = self.x + clamped_distance * cos_angle
+            sensor_y = self.y + clamped_distance * sin_angle
 
-            distance, flood_value = self._cast_ray_for_collision(map, angle, flood_sensor_distance)
-            sensor_x = self.x + distance * np.cos(angle)
-            sensor_y = self.y + distance * np.sin(angle)
+            normalized_distance = clamped_distance / collision_sensor_max_distance if collision_sensor_max_distance > 0 else 0.0
+            step_results.append((sensor_x, sensor_y, clamped_distance, normalized_distance))
 
-            sensor_data.append((sensor_x, sensor_y, flood_sensor_distance, flood_value))
+        for cos_angle, sin_angle in sensor_vectors:
+            distance, flood_value = self._cast_ray_for_collision(map, cos_angle, sin_angle, flood_sensor_distance)
+            clamped_distance = max(0.0, min(distance, flood_sensor_distance))
+            sensor_x = self.x + clamped_distance * cos_angle
+            sensor_y = self.y + clamped_distance * sin_angle
+            step_results.append((sensor_x, sensor_y, flood_sensor_distance, flood_value))
 
-        # car flood sensor
-        distance, flood_value = self._cast_ray_for_collision(map, 0, 0.0)
-        sensor_data.append((self.x, self.y, 0.0, flood_value))
+        step_results.append((self.x, self.y, 0.0, current_flood))
 
-        return sensor_data
+        return step_results
 
-    def _cast_ray_for_collision(self, map: Map, angle: float , max_distance: float):
-        # angle parameter already includes self.angle offset from caller
-        step_size = 0.02
+    def _cast_ray_for_collision(self, map: Map, cos_angle: float, sin_angle: float, max_distance: float, step_size: float = 0.05):
+        if max_distance <= 0.0:
+            return 0.0, map.get_normalized_distance_to_finish(self.x, self.y)
+
+        distance = 0.0
         flood_value = map.get_normalized_distance_to_finish(self.x, self.y)
+        # ensure final sample covers max_distance without overshooting due to step increments
+        limit = max_distance + 1e-6
 
-        for distance in np.arange(0, max_distance, step_size):
-            ray_x = self.x + distance * np.cos(angle)
-            ray_y = self.y + distance * np.sin(angle)
-
-            grid_x = int(ray_x)
-            grid_y = int(ray_y)
+        while distance <= limit:
+            sample_x = self.x + distance * cos_angle
+            sample_y = self.y + distance * sin_angle
+            grid_x = int(sample_x)
+            grid_y = int(sample_y)
 
             if not (0 <= grid_x < map.grid_width and 0 <= grid_y < map.grid_height):
-                return (distance, flood_value)
+                return min(distance, max_distance), flood_value
 
             if not map.track_mask[grid_y, grid_x]:
-                return (distance, flood_value)
+                return min(distance, max_distance), flood_value
 
-            flood_value = map.get_normalized_distance_to_finish(ray_x, ray_y)
+            flood_value = map.get_normalized_distance_to_finish(sample_x, sample_y)
+            distance += step_size
 
-        return (max_distance, flood_value)
+        return max_distance, flood_value

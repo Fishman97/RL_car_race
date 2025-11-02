@@ -99,7 +99,7 @@ class Renderer:
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 self._handle_button_click(event.pos)
             elif event.type == pygame.VIDEORESIZE:
-                self._resize_window_optimally(event.w, event.h)
+                self._resize_window(event.w, event.h)
                 self.screen = pygame.display.set_mode((self.window_width, self.window_height), pygame.RESIZABLE)
         
         self.screen.fill(self.LIGHT_GRAY)
