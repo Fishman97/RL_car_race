@@ -2,9 +2,9 @@ import pygame
 import numpy as np
 import os
 from typing import Optional, Dict, Any
-from src.car import Car
-from src.map import Map
-from src.car_skin import Car_skin
+from src.env.car import Car
+from src.env.map import Map
+from src.env.car_skin import Car_skin
 
 PANEL_WIDTH = 300
 DEFAULT_WINDOW_HEIGHT = 800
@@ -99,7 +99,7 @@ class Renderer:
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 self._handle_button_click(event.pos)
             elif event.type == pygame.VIDEORESIZE:
-                self._resize_window_optimally(event.w, event.h)
+                self._resize_window(event.w, event.h)
                 self.screen = pygame.display.set_mode((self.window_width, self.window_height), pygame.RESIZABLE)
         
         self.screen.fill(self.LIGHT_GRAY)
@@ -335,7 +335,10 @@ class Renderer:
             return y_start + cell_height + max(int(font_size * 0.8), 4)
 
         y_offset = _draw_value_table("Observation", ["c1", "c2", "c3", "f1", "f2","f3","f4","v"], observation, y_offset)
-        y_offset = _draw_value_table("Action", ["Steering", "Acceleration", "Brake"], action, y_offset)
+
+        action_vector = np.asarray(action, dtype=np.float32).flatten() if action is not None else np.zeros(4, dtype=np.float32)
+
+        y_offset = _draw_value_table("Action", ["Accel", "Brake", "Steer L", "Steer R"], action_vector, y_offset)
 
 
         button_margin = max(int(10 * scale), 4)

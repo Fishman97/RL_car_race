@@ -4,9 +4,9 @@ import os
 from gymnasium import spaces
 from typing import Optional, Tuple, Dict, Any
 
-from src.car import Car
-from src.map import Map, load_tileset
-from src.car_skin import Car_skin
+from src.env.car import Car
+from src.env.map import Map, load_tileset
+from src.env.car_skin import Car_skin
 
 class CarRacingEnv(gym.Env):
     
@@ -35,12 +35,15 @@ class CarRacingEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=0.0, high=1.0, shape=(8,), dtype=np.float32
         )
-        
-        self.action_space = spaces.Dict({
-            'steering': spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32),
-            'acceleration': spaces.Discrete(2),  # 0 or 1
-            'brake': spaces.Discrete(2)  # 0 or 1
-        })
+
+        # Discrete action space: 0=accelerate, 1=brake, 2=steer left, 3=steer right
+        self.action_space = spaces.Discrete(4)
+        self._action_mapping = {
+            0: np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float32),
+            1: np.array([0.0, 1.0, 0.0, 0.0], dtype=np.float32),
+            2: np.array([0.0, 0.0, 1.0, 0.0], dtype=np.float32),
+            3: np.array([0.0, 0.0, 0.0, 1.0], dtype=np.float32),
+        }
         
         self.renderer = None
         if self.render_mode == "human":
@@ -62,27 +65,25 @@ class CarRacingEnv(gym.Env):
         self.previous_distance = self.map.get_distance_to_finish(self.car.x, self.car.y)
 
         observation = self.car.get_normalized_observation(self.map)
-        observation = np.append(observation, self.car.get_speed() / self.car.max_speed)
         info = {}
         
         self.attempts += 1
-        self.last_action = np.array([0.0, 0.0, 0.0])
+        self.last_action = np.zeros(4, dtype=np.float32)
 
         return observation, info
     
-    def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, bool, dict]:
-        steering, acceleration, brake = action
-        self.last_action = action
+    def step(self, action: Any) -> Tuple[np.ndarray, float, bool, bool, dict]:
+        mapped_action = self._map_action(action)
+        acceleration, brake, steer_left, steer_right = mapped_action
+        self.last_action = mapped_action
         
         dt = 1.0 / self.metadata["render_fps"]
-        self.car.update(steering, acceleration, brake, dt, self.map)
+        self.car.update(acceleration, brake, steer_left, steer_right, dt, self.map)
         
         collision = self.map.check_collision(self.car)
         
         finished = self.map.check_finish_line(self.car)
         observation = self.car.get_normalized_observation(self.map)
-
-        observation = np.append(observation, self.car.get_speed() / self.car.max_speed)
         
         reward = self._calculate_reward(collision, finished)
         
@@ -100,6 +101,16 @@ class CarRacingEnv(gym.Env):
         
         
         return observation, reward, terminated, truncated, info
+
+    def _map_action(self, action: Any) -> np.ndarray:
+        if isinstance(action, (np.integer, int)):
+            idx = int(action)
+            if idx in self._action_mapping:
+                return self._action_mapping[idx]
+        elif action is None:
+            return np.zeros(4, dtype=np.float32)
+
+        return np.zeros(4, dtype=np.float32)
     
     def _calculate_reward(self, collision: bool, finished: bool) -> float:
         reward = 0.0
@@ -110,19 +121,14 @@ class CarRacingEnv(gym.Env):
         if collision:
             return -100.0
         
-        # Reward for getting closer to finish
-        current_dist = self.map.get_distance_to_finish(self.car.x, self.car.y)
+        current_dist = self.map.get_normalized_distance_to_finish(self.car.x, self.car.y)
         if self.previous_distance is not None:
             progress = self.previous_distance - current_dist
             reward += progress * 10.0
         self.previous_distance = current_dist
-        
-        # Reward for speed (encourage going fast)
-        reward += self.car.get_speed() * 0.1
-        
-        # Small time penalty (encourage efficiency)
-        reward -= 0.01
-        
+
+        reward -= 0.1
+
         return reward
     
     def render(self) -> bool:

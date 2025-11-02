@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple, Optional, Any, TYPE_CHECKING
 import xml.etree.ElementTree as ET
 
 if TYPE_CHECKING:
-    from src.car import Car
+    from src.env.car import Car
 
 class Map:
     
