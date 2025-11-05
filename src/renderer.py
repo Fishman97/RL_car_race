@@ -1,6 +1,7 @@
 import pygame
 import numpy as np
 import os
+import math
 from typing import Optional, Dict, Any
 from src.env.car import Car
 from src.env.map import Map
@@ -92,7 +93,7 @@ class Renderer:
         screen_y = int(y * self.tile_size)
         return screen_x, screen_y
 
-    def render(self, car: Car, observation: np.ndarray, action: np.ndarray, attempts: int = -1) -> bool:
+    def render(self, car: Car, observation: np.ndarray, action: np.ndarray, attempts: int = -1, training_episode: int = -1, training_total_episodes: int = -1, display_run: int = -1, current_step: int = -1, buffer_size: int = -1, max_steps: int = -1, episode_reward: float = float("nan")) -> bool:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
@@ -104,7 +105,7 @@ class Renderer:
         
         self.screen.fill(self.LIGHT_GRAY)
 
-        self._draw_panel(car, observation, action, attempts)
+        self._draw_panel(car, observation, action, attempts, training_episode, training_total_episodes, display_run, current_step, buffer_size, max_steps, episode_reward)
 
         if self.view_mode == "normal":
             self._draw_map()
@@ -272,7 +273,7 @@ class Renderer:
             pygame.draw.circle(self.screen, color, (end_line_x, end_line_y), self.tile_size // 3)
 
 
-    def _draw_panel(self, car: Car, observation: np.ndarray, action: np.ndarray, attempts: int = -1):
+    def _draw_panel(self, car: Car, observation: np.ndarray, action: np.ndarray, attempts: int = -1, training_episode: int = -1, training_total_episodes: int = -1,display_run: int = -1, current_step: int = -1, buffer_size: int = -1, max_steps: int = -1, episode_reward: float = float("nan")):
         pygame.draw.rect(self.screen, self.LIGHT_GRAY, (0, 0, PANEL_WIDTH, self.window_height))
         scale = PANEL_WIDTH / 300.0
         font_size = max(12, int(20 * scale))
@@ -280,8 +281,47 @@ class Renderer:
         base_x = int(10 * scale)
         y_offset = int(10 * scale)
 
-        runs_surface = font.render(f"Runs: {attempts}", True, self.BLACK)
+        if display_run is not None and display_run >= 0:
+            display_text = str(display_run)
+        elif attempts is not None and attempts >= 0:
+            display_text = str(attempts)
+        else:
+            display_text = "-"
+        if current_step is not None and current_step >= 0:
+            if max_steps is not None and max_steps > 0:
+                step_text = f"{current_step}/{max_steps}"
+            else:
+                step_text = str(current_step)
+        else:
+            step_text = "-"
+        runs_surface = font.render(f"Display Run: {display_text} (Step {step_text})", True, self.BLACK)
         self.screen.blit(runs_surface, (base_x, y_offset))
+        y_offset += max(int(font_size * 1.2), 1)
+
+        training_label = "Training Run: "
+        if training_episode is not None and training_episode >= 0:
+            training_text = f"{training_episode}"
+        else:
+            training_text = "-"
+        if training_total_episodes is not None and training_total_episodes > 0:
+            total_text = f"/{training_total_episodes}"
+        else:
+            total_text = ""
+        training_surface = font.render(f"{training_label}{training_text}{total_text}", True, self.BLACK)
+        self.screen.blit(training_surface, (base_x, y_offset))
+        y_offset += max(int(font_size * 1.2), 1)
+
+        buffer_text = str(buffer_size) if buffer_size is not None and buffer_size >= 0 else "-"
+        buffer_surface = font.render(f"Buffer Size: {buffer_text}", True, self.BLACK)
+        self.screen.blit(buffer_surface, (base_x, y_offset))
+        y_offset += max(int(font_size * 1.2), 1)
+
+        if isinstance(episode_reward, (int, float)) and not math.isnan(episode_reward):
+            reward_text = f"{episode_reward:.1f}"
+        else:
+            reward_text = "-"
+        reward_surface = font.render(f"Episode Reward: {reward_text}", True, self.BLACK)
+        self.screen.blit(reward_surface, (base_x, y_offset))
         y_offset += max(int(font_size * 1.2), 1)
 
         headers = ["Speed", "Angle", "X", "Y"]

@@ -3,3 +3,5 @@ assets/tilesets/tileset.png
 .vscode/settings.json
 assets/tilesets/flat_race.png
 *.pyc
+.idea/
+models/

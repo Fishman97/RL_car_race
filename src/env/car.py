@@ -100,6 +100,16 @@ class Car:
         observation = np.zeros(8)
         for i, (sensor_x, sensor_y, distance, value) in enumerate(sensors_data):
             observation[i] = value
+        
+        # for the flood sensor put 1 to the one with the lowest value (closest to finish)
+        min_index = 3
+        min_value = observation[3]
+        for i in range(3, 7):
+            if observation[i] < min_value:
+                min_index = i
+                min_value = observation[i]
+            observation[i] = 0.0
+        observation[min_index] = 1.0
 
         observation[-1] = self.get_speed() / self.max_speed
 

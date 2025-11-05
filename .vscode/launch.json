@@ -6,6 +6,9 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
+            "args": [
+                "--mode", "play",
+            ],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
             "justMyCode": true,
@@ -21,7 +24,7 @@
             "args": [
                 "--agent-type", "random",
                 "--render-mode", "human",
-                "--print-interval", "1000"
+                "--mode", "play",
             ],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
@@ -31,14 +34,14 @@
             }
         },
         {
-            "name": "Python: Car Racing Env (DQN Agent)",
+            "name": "Python: Car Racing Env (DQN Best Checkpoint)",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
             "args": [
                 "--agent-type", "DQN",
                 "--render-mode", "human",
-                "--print-interval", "1000"
+                "--mode", "play",
             ],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
@@ -48,14 +51,29 @@
             }
         },
         {
-            "name": "Python: Car Racing Env (DQN Agent - No Render)",
+            "name": "Python: Train DQN (Headless)",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
             "args": [
-                "--agent-type", "DQN",
-                "--render-mode", "none",
-                "--print-interval", "1000"
+                "--mode", "train",
+                "--agent-type", "DQN"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "Python: Train DQN with UI",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "args": [
+                "--mode", "train-human",
+                "--agent-type", "DQN"
             ],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
