@@ -4,4 +4,6 @@ assets/tilesets/tileset.png
 assets/tilesets/flat_race.png
 *.pyc
 .idea/
-models/
+models/*
+!models/demo/
+!models/demo/**

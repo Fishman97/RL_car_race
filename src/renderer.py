@@ -59,9 +59,11 @@ class Renderer:
         tileset_path = os.path.join(tileset_dir, "assets", "tilesets", "flat_race.png")
         
         try:
+            if not os.path.exists(tileset_path):
+                raise FileNotFoundError(tileset_path)
             self.tileset_image = pygame.image.load(tileset_path).convert_alpha()
-        except pygame.error as e:
-            print(f"Could not load tileset image: {e}")
+        except (pygame.error, FileNotFoundError) as e:
+            print(f"Tileset unavailable ({e}). Using collision view instead.")
             self.tileset_image = None
         
         self.tile_width = self.tileset.get("tilewidth", 32)
@@ -93,7 +95,7 @@ class Renderer:
         screen_y = int(y * self.tile_size)
         return screen_x, screen_y
 
-    def render(self, car: Car, observation: np.ndarray, action: np.ndarray, attempts: int = -1, training_episode: int = -1, training_total_episodes: int = -1, display_run: int = -1, current_step: int = -1, buffer_size: int = -1, max_steps: int = -1, episode_reward: float = float("nan")) -> bool:
+    def render(self, car: Car, observation: np.ndarray, action: np.ndarray, attempts: int = -1, training_episode: int = -1, training_total_episodes: int = -1, display_run: int = -1, current_step: int = -1, buffer_size: int = -1, max_steps: int = -1, episode_reward: float = float("nan"), demo_mode: bool = False) -> bool:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
@@ -105,7 +107,7 @@ class Renderer:
         
         self.screen.fill(self.LIGHT_GRAY)
 
-        self._draw_panel(car, observation, action, attempts, training_episode, training_total_episodes, display_run, current_step, buffer_size, max_steps, episode_reward)
+        self._draw_panel(car, observation, action, attempts, training_episode, training_total_episodes, display_run, current_step, buffer_size, max_steps, episode_reward, demo_mode)
 
         if self.view_mode == "normal":
             self._draw_map()
@@ -118,6 +120,9 @@ class Renderer:
             self._draw_flood_view()
             self._draw_car(car)
             self._draw_sensors(car)
+
+        if demo_mode and display_run is not None and display_run >= 0:
+            self._draw_demo_overlay(display_run)
 
         
         pygame.display.flip()
@@ -273,7 +278,7 @@ class Renderer:
             pygame.draw.circle(self.screen, color, (end_line_x, end_line_y), self.tile_size // 3)
 
 
-    def _draw_panel(self, car: Car, observation: np.ndarray, action: np.ndarray, attempts: int = -1, training_episode: int = -1, training_total_episodes: int = -1,display_run: int = -1, current_step: int = -1, buffer_size: int = -1, max_steps: int = -1, episode_reward: float = float("nan")):
+    def _draw_panel(self, car: Car, observation: np.ndarray, action: np.ndarray, attempts: int = -1, training_episode: int = -1, training_total_episodes: int = -1,display_run: int = -1, current_step: int = -1, buffer_size: int = -1, max_steps: int = -1, episode_reward: float = float("nan"), demo_mode: bool = False):
         pygame.draw.rect(self.screen, self.LIGHT_GRAY, (0, 0, PANEL_WIDTH, self.window_height))
         scale = PANEL_WIDTH / 300.0
         font_size = max(12, int(20 * scale))
@@ -294,7 +299,8 @@ class Renderer:
                 step_text = str(current_step)
         else:
             step_text = "-"
-        runs_surface = font.render(f"Display Run: {display_text} (Step {step_text})", True, self.BLACK)
+        label_prefix = "Episode" if demo_mode else "Display Run"
+        runs_surface = font.render(f"{label_prefix}: {display_text} (Step {step_text})", True, self.BLACK)
         self.screen.blit(runs_surface, (base_x, y_offset))
         y_offset += max(int(font_size * 1.2), 1)
 
@@ -410,6 +416,29 @@ class Renderer:
             text_surface = font.render(label, True, text_color)
             text_rect = text_surface.get_rect(center=rect.center)
             self.screen.blit(text_surface, text_rect)
+
+    def _draw_demo_overlay(self, display_run: int) -> None:
+        label = f"Episode: {display_run}"
+        font_size = max(int(self.window_height * 0.12), 48)
+        font = self._get_font(font_size)
+        text_surface = font.render(label, True, self.YELLOW)
+        text_rect = text_surface.get_rect()
+        available_width = self.window_width - PANEL_WIDTH
+        text_rect.centerx = PANEL_WIDTH + available_width // 2
+        top_margin = max(int(self.window_height * 0.04), 12)
+        text_rect.top = top_margin
+        padding = max(font_size // 6, 6)
+        bg_rect = pygame.Rect(
+            text_rect.left - padding,
+            text_rect.top - padding,
+            text_rect.width + padding * 2,
+            text_rect.height + padding * 2,
+        )
+        overlay = pygame.Surface((bg_rect.width, bg_rect.height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 160))
+        self.screen.blit(overlay, (bg_rect.x, bg_rect.y))
+        pygame.draw.rect(self.screen, self.YELLOW, bg_rect, 2)
+        self.screen.blit(text_surface, text_rect)
     
     def _draw_flood_view(self):
         max_dist = self.map.max_distance

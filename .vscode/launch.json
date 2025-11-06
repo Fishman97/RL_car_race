@@ -51,6 +51,22 @@
             }
         },
         {
+            "name": "Python: Demo DQN Models",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "args": [
+                "--mode", "demo",
+                "--render-mode", "human"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
             "name": "Python: Train DQN (Headless)",
             "type": "debugpy",
             "request": "launch",

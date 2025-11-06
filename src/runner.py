@@ -7,12 +7,13 @@ import time
 
 
 class Runner:
-    def __init__(self, map_path, tileset_path, agent_type, render_mode, max_steps: int, model_path: Optional[str] = None):
+    def __init__(self, map_path, tileset_path, agent_type, render_mode, max_steps: int, model_path: Optional[str] = None, demo_mode: bool = False):
         self.map_path = map_path
         self.tileset_path = tileset_path
         self.agent_type = agent_type
         self.render_mode = render_mode
         self.max_steps = max_steps
+        self.demo_mode = demo_mode
 
         self.env = CarRacingEnv(map_path=self.map_path, tileset_path=self.tileset_path, render_mode=self.render_mode, max_steps=self.max_steps)
 
@@ -24,6 +25,7 @@ class Runner:
         self.training_episode = -1
         self.training_total_episodes = -1
         self.training_buffer_size = -1
+        self.env.update_metadata(demo_mode=self.demo_mode)
 
         state_shape = getattr(self.env.observation_space, "shape", None)
         state_size = int(state_shape[0]) if state_shape else 0
@@ -71,7 +73,7 @@ class Runner:
         if self.agent is not None and hasattr(self.agent, "reset"):
             self.agent.reset()
         display_value = self.display_model_episode if self.display_model_episode >= 0 else self.runs + 1
-        self.env.update_metadata(display_run=display_value, training_episode=self.training_episode, total_episodes=self.training_total_episodes, buffer_size=self.training_buffer_size)
+        self.env.update_metadata(display_run=display_value, training_episode=self.training_episode, total_episodes=self.training_total_episodes, buffer_size=self.training_buffer_size, demo_mode=self.demo_mode)
 
     def run(self, print_interval: int = 60) -> bool:
         if self.agent is None:
@@ -88,7 +90,7 @@ class Runner:
         self._step_count += 1
 
         display_value = self.display_model_episode if self.display_model_episode >= 0 else self.runs + 1
-        self.env.update_metadata(display_run=display_value, training_episode=self.training_episode, total_episodes=self.training_total_episodes, buffer_size=self.training_buffer_size)
+        self.env.update_metadata(display_run=display_value, training_episode=self.training_episode, total_episodes=self.training_total_episodes, buffer_size=self.training_buffer_size, demo_mode=self.demo_mode)
 
         if print_interval > 0 and self._step_count % print_interval == 0:
             elapsed_time = time.time() - self._start_time
@@ -152,6 +154,9 @@ class Runner:
         if self.agent is not None and hasattr(self.agent, "reset"):
             self.agent.reset()
         self._episode_active = False
+        if self.env is not None:
+            display_value = self.display_model_episode if self.display_model_episode >= 0 else self.runs + 1
+            self.env.update_metadata(display_run=display_value, training_episode=self.training_episode, total_episodes=self.training_total_episodes, buffer_size=self.training_buffer_size, demo_mode=self.demo_mode)
         return True
 
     def is_window_closed(self) -> bool:
@@ -163,12 +168,7 @@ class Runner:
         self.training_buffer_size = buffer_size
         if self._episode_active and self.env is not None:
             display_value = self.display_model_episode if self.display_model_episode >= 0 else self.runs + 1
-            self.env.update_metadata(
-                display_run=display_value,
-                training_episode=self.training_episode,
-                total_episodes=self.training_total_episodes,
-                buffer_size=self.training_buffer_size,
-            )
+            self.env.update_metadata(display_run=display_value, training_episode=self.training_episode, total_episodes=self.training_total_episodes, buffer_size=self.training_buffer_size, demo_mode=self.demo_mode)
 
     def close(self) -> None:
         if self.env is not None:

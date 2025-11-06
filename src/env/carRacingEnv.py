@@ -59,6 +59,7 @@ class CarRacingEnv(gym.Env):
         self.episode_reward = 0.0
         self.last_action = np.zeros(4, dtype=np.float32)
         self.training_total_episodes = -1
+        self.demo_mode = False
         
     def reset(self, *, seed: Optional[int] = None, options: Optional[dict] = None) -> Tuple[np.ndarray, dict]:
         super().reset(seed=seed, options=options)
@@ -111,7 +112,7 @@ class CarRacingEnv(gym.Env):
         
         return observation, reward, terminated, truncated, info
 
-    def update_metadata(self,*, display_run: Optional[int] = None, training_episode: Optional[int] = None, total_episodes: Optional[int] = None, buffer_size: Optional[int] = None ) -> None:
+    def update_metadata(self,*, display_run: Optional[int] = None, training_episode: Optional[int] = None, total_episodes: Optional[int] = None, buffer_size: Optional[int] = None, demo_mode: Optional[bool] = None ) -> None:
         if display_run is not None:
             self.display_run = display_run
         if training_episode is not None:
@@ -120,6 +121,8 @@ class CarRacingEnv(gym.Env):
             self.training_total_episodes = total_episodes
         if buffer_size is not None:
             self.buffer_size = buffer_size
+        if demo_mode is not None:
+            self.demo_mode = bool(demo_mode)
 
     def _map_action(self, action: Any) -> np.ndarray:
         if isinstance(action, (np.integer, int)):
@@ -158,7 +161,7 @@ class CarRacingEnv(gym.Env):
     def render(self) -> bool:
         if self.render_mode == "human":
             if self.renderer is not None:
-                return self.renderer.render(self.car, self.car.get_normalized_observation(self.map), self.last_action, attempts=self.attempts, training_episode=self.training_episode, training_total_episodes=self.training_total_episodes, display_run=self.display_run, current_step=min(self.steps, self.max_steps), buffer_size=self.buffer_size, max_steps=self.max_steps, episode_reward=self.episode_reward)
+                return self.renderer.render(self.car, self.car.get_normalized_observation(self.map), self.last_action, attempts=self.attempts, training_episode=self.training_episode, training_total_episodes=self.training_total_episodes, display_run=self.display_run, current_step=min(self.steps, self.max_steps), buffer_size=self.buffer_size, max_steps=self.max_steps, episode_reward=self.episode_reward, demo_mode=self.demo_mode)
         return True
     
     def close(self):

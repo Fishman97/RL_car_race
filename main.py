@@ -2,9 +2,11 @@ import argparse
 from pathlib import Path
 from src.runner import Runner
 import src.train_dqn as train_dqn
+import src.demo as demo
 
 DEFAULT_MAP_PATH = "assets/maps/track1.tmx"
 DEFAULT_TILESET_PATH = "assets/tilesets/flat_race.tsx"
+DEFAULT_DEMO_DIR = "models/demo"
 
 def main():
     parser = argparse.ArgumentParser(description="Car Racing Environment Runner")
@@ -12,7 +14,7 @@ def main():
         "--mode",
         type=str,
         default=None,
-        choices=["play", "train", "train-human"],
+        choices=["play", "train", "train-human", "demo"],
         help="Execution mode: 'play' to control/view an agent, 'train' to run headless training, 'train-human' to train while visualizing the latest policy.",
     )
     parser.add_argument(
@@ -53,12 +55,20 @@ def main():
         default=DEFAULT_TILESET_PATH,
         help="Path to the tileset file"
     )
+    parser.add_argument(
+        "--demo-dir",
+        type=str,
+        default=DEFAULT_DEMO_DIR,
+        help="Directory containing demo checkpoints (default: models/demo)",
+    )
     
     args = parser.parse_args()
 
     if args.mode is None:
         raise ValueError("Mode must be specified via --mode argument.")
-    if args.mode == "play" and args.agent_type is None:
+    if args.mode == "demo":
+        args.agent_type = "DQN"
+    elif args.mode == "play" and args.agent_type is None:
         args.agent_type = "manual"
     if args.agent_type is None:
         raise ValueError("Agent type must be specified via --agent-type argument.")
@@ -69,6 +79,11 @@ def main():
 
     if args.mode == "train-human":
         train_dqn.train_with_UI(map_path=args.map, tileset_path=args.tileset)
+        return
+
+    if args.mode == "demo":
+        render_mode = "human" if args.render_mode == "none" else args.render_mode
+        demo.run_demo(map_path=args.map, tileset_path=args.tileset, render_mode=render_mode, print_interval=args.print_interval, demo_dir=args.demo_dir)
         return
     
     # Convert 'none' string to None for render_mode

@@ -175,7 +175,7 @@ class DQNAgent:
         self.action_size = action_size
         self.rng = np.random.default_rng(seed)
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = "cpu" #Not tested with CUDA, the bottle neck will probably be the Evn anyway as the NN is small
         self.config = config or DQNConfig()
 
         torch.manual_seed(seed)
